@@ -23,7 +23,7 @@ router.get("/", async (req, res) => {
   async function RobinPair() {
     const { state, saveCreds } = await useMultiFileAuthState(`./session`);
     try {
-      let RobinPairWeb = makeWASocket({
+      let KaveemdPairWeb = makeWASocket({
         auth: {
           creds: state.creds,
           keys: makeCacheableSignalKeyStore(
@@ -36,17 +36,17 @@ router.get("/", async (req, res) => {
         browser: Browsers.macOS("Safari"),
       });
 
-      if (!RobinPairWeb.authState.creds.registered) {
+      if (!KaveemdPairWeb.authState.creds.registered) {
         await delay(1500);
         num = num.replace(/[^0-9]/g, "");
-        const code = await RobinPairWeb.requestPairingCode(num);
+        const code = await KaveemdPairWeb.requestPairingCode(num);
         if (!res.headersSent) {
           await res.send({ code });
         }
       }
 
-      RobinPairWeb.ev.on("creds.update", saveCreds);
-      RobinPairWeb.ev.on("connection.update", async (s) => {
+      KaveemdPairWeb.ev.on("creds.update", saveCreds);
+      KaveemdPairWeb.ev.on("connection.update", async (s) => {
         const { connection, lastDisconnect } = s;
         if (connection === "open") {
           try {
@@ -54,7 +54,7 @@ router.get("/", async (req, res) => {
             const sessionPrabath = fs.readFileSync("./session/creds.json");
 
             const auth_path = "./session/";
-            const user_jid = jidNormalizedUser(RobinPairWeb.user.id);
+            const user_jid = jidNormalizedUser(KaveemdPairWeb.user.id);
 
             function randomMegaId(length = 6, numberLength = 4) {
               const characters =
@@ -81,20 +81,20 @@ router.get("/", async (req, res) => {
               ""
             );
 
-            const sid = `👋 *KAVEE-md [The powerful Whatsapp BOT]* 👋\n\n👉 ${string_session} 👈\n\n*This is the your Session ID, copy this id and paste into config.js file*\n\n*You can ask any question using this link*\n\n*wa.me/message/WKGLBR2PCETWD1*\n\n*You can join my whatsapp group*`;
+            const sid = `👋 *KAVEE-md [The powerful Whatsapp BOT]* 👋\n\n👉 ${string_session} 👈\n\n*This is the your Session ID, copy this id and paste into config.js file*\n\n*You can ask any question using this link*\n\n*You can join my whatsapp group*`;
             const mg = `⚠ *Do not share this code to anyone* ⚠`;
-            const dt = await RobinPairWeb.sendMessage(user_jid, {
+            const dt = await KaveemdPairWeb.sendMessage(user_jid, {
               image: {
                 url: "https://raw.githubusercontent.com/Kaveemd17/BOT-IMGS/refs/heads/main/4e10a675-5de7-4552-8c31-b5dc1a31ed01.webp",
               },
               caption: sid,
             });
-            const msg = await RobinPairWeb.sendMessage(user_jid, {
+            const msg = await KaveemdPairWeb.sendMessage(user_jid, {
               text: string_session,
             });
-            const msg1 = await RobinPairWeb.sendMessage(user_jid, { text: mg });
+            const msg1 = await KaveemdPairWeb.sendMessage(user_jid, { text: mg });
           } catch (e) {
-            exec("pm2 restart prabath");
+            exec("pm2 restart Kaveemd");
           }
 
           await delay(100);
@@ -107,25 +107,25 @@ router.get("/", async (req, res) => {
           lastDisconnect.error.output.statusCode !== 401
         ) {
           await delay(10000);
-          RobinPair();
+          KaveemdPair();
         }
       });
     } catch (err) {
-      exec("pm2 restart Robin-md");
+      exec("pm2 restart Kavee-md");
       console.log("service restarted");
-      RobinPair();
+      KaveemdPair();
       await removeFile("./session");
       if (!res.headersSent) {
         await res.send({ code: "Service Unavailable" });
       }
     }
   }
-  return await RobinPair();
+  return await KaveemdPair();
 });
 
 process.on("uncaughtException", function (err) {
   console.log("Caught exception: " + err);
-  exec("pm2 restart Robin");
+  exec("pm2 restart Kaveemd");
 });
 
 module.exports = router;
