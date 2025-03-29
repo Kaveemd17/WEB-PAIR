@@ -14,8 +14,8 @@ app.use("/", async (req, res, next) => {
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`⏩ Server running on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`⏩ Server running on port ${PORT} at ${HOST}`);
 });
 
 module.exports = app;
