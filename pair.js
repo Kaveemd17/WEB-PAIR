@@ -83,16 +83,28 @@ router.get("/", async (req, res) => {
 
             const sid = `👋 *KAVEE-md [The powerful Whatsapp BOT]* 👋\n\n👉 ${string_session} 👈\n\n*This is the your Session ID, copy this id and paste into config.js file*\n\n*You can ask any question using this link*\n\n*You can join my whatsapp group*`;
             const mg = `⚠ *Do not share this code to anyone* ⚠`;
-            const dt = await KaveemdPairWeb.sendMessage(user_jid, {
-              image: {
-                url: "https://raw.githubusercontent.com/Kaveemd17/BOT-IMGS/refs/heads/main/4e10a675-5de7-4552-8c31-b5dc1a31ed01.webp",
-              },
-              caption: sid,
-            });
-            const msg = await KaveemdPairWeb.sendMessage(user_jid, {
-              text: string_session,
-            });
-            const msg1 = await KaveemdPairWeb.sendMessage(user_jid, { text: mg });
+            try {
+              const dt = await KaveemdPairWeb.sendMessage(user_jid, {
+                image: {
+                  url: "https://raw.githubusercontent.com/Kaveemd17/BOT-IMGS/refs/heads/main/4e10a675-5de7-4552-8c31-b5dc1a31ed01.webp",
+                },
+                caption: sid,
+              });
+            } catch (error) {
+              console.error("Failed to send welcome message:", error);
+            }
+            try {
+              const msg = await KaveemdPairWeb.sendMessage(user_jid, {
+                text: string_session,
+              });
+            } catch (error) {
+              console.error("Failed to send session ID:", error);
+            }
+            try {
+              const msg1 = await KaveemdPairWeb.sendMessage(user_jid, { text: mg });
+            } catch (error) {
+              console.error("Failed to send warning message:", error);
+            }
           } catch (e) {
             console.error("Error in connection.update:", e);
             //Consider more sophisticated error handling here instead of pm2 restart
