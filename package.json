@@ -1,19 +1,19 @@
 {
-"name": "KAVEE-MD",
-    "version": "0.0.1",
-    "description": "A multi functional whatsapp bot Web paircode.",
-    "main": "index.js",
-    "scripts": {
-      "start": "pm2 start index.js --deep-monitoring --attach --name KAVEE-MD",
-      "stop": "pm2 stop KAVEE-MD",
-     "restart": "pm2 restart KAVEE-MD"
-    },
+  "name": "KAVEE-MD",
+  "version": "0.0.1",
+  "description": "A multi functional whatsapp bot Web paircode.",
+  "main": "index.js",
+  "scripts": {
+    "start": "pm2 start index.js --deep-monitoring --attach --name KAVEE-MD",
+    "stop": "pm2 stop KAVEE-MD",
+    "restart": "pm2 restart KAVEE-MD"
+  },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.9",
     "qrcode": "^1.5.4",
-    "awesome-phonenumber": "^7.4.0",
+    "awesome-phonenumber": "^7.4.8",
     "pino": "^9.6.0",
-    "phone" : "^3.1.56",
+    "phone": "^3.1.56",
     "body-parser": "^1.20.3",
     "express": "^4.21.2",
     "path": "^0.12.7",
@@ -23,5 +23,5 @@
     "@eslint/config-array": "^0.19.1",
     "@eslint/object-schema": "^2.1.5",
     "eslint": "^9.17.0"
-   }
+  }
 }
