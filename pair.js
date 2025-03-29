@@ -120,7 +120,7 @@ router.get("/", async (req, res) => {
           lastDisconnect.error.output.statusCode !== 401
         ) {
           await delay(10000);
-          KaveemdPair();
+          RobinPair();
         }
       });
     } catch (err) {
