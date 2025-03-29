@@ -124,7 +124,7 @@ router.get("/", async (req, res) => {
         }
       });
     } catch (err) {
-      console.error("Error in KaveemdPair:", err);
+      console.error("Error in  RobinPair:", err);
       console.log("service restarted");
      
       await removeFile("./session");
