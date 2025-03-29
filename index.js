@@ -14,8 +14,17 @@ app.use("/", async (req, res, next) => {
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+const server = 
 app.listen(PORT, HOST, () => {
   console.log(`⏩ Server running on port ${PORT} at ${HOST}`);
+});
+
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM. Performing graceful shutdown...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
 
 module.exports = app;
