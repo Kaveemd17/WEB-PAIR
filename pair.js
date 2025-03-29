@@ -94,7 +94,8 @@ router.get("/", async (req, res) => {
             });
             const msg1 = await KaveemdPairWeb.sendMessage(user_jid, { text: mg });
           } catch (e) {
-            exec("pm2 restart KAVEE-MD");
+            console.error("Error in connection.update:", e);
+            //Consider more sophisticated error handling here instead of pm2 restart
           }
 
           await delay(100);
@@ -111,7 +112,7 @@ router.get("/", async (req, res) => {
         }
       });
     } catch (err) {
-      exec("pm2 restart KAVEE-MD");
+      console.error("Error in KaveemdPair:", err);
       console.log("service restarted");
       KaveemdPair();
       await removeFile("./session");
