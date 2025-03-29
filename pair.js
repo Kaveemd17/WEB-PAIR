@@ -126,14 +126,15 @@ router.get("/", async (req, res) => {
     } catch (err) {
       console.error("Error in KaveemdPair:", err);
       console.log("service restarted");
-      KaveemdPair();
+     
       await removeFile("./session");
       if (!res.headersSent) {
         await res.send({ code: "Service Unavailable" });
       }
+       return RobinPair();
     }
   }
-  return await KaveemdPair();
+ return await RobinPair();
 });
 
 process.on("uncaughtException", function (err) {
