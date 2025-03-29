@@ -94,7 +94,7 @@ router.get("/", async (req, res) => {
             });
             const msg1 = await KaveemdPairWeb.sendMessage(user_jid, { text: mg });
           } catch (e) {
-            exec("pm2 restart Kaveemd");
+            exec("pm2 restart KAVEE-MD");
           }
 
           await delay(100);
@@ -111,7 +111,7 @@ router.get("/", async (req, res) => {
         }
       });
     } catch (err) {
-      exec("pm2 restart Kavee-md");
+      exec("pm2 restart KAVEE-MD");
       console.log("service restarted");
       KaveemdPair();
       await removeFile("./session");
@@ -125,7 +125,7 @@ router.get("/", async (req, res) => {
 
 process.on("uncaughtException", function (err) {
   console.log("Caught exception: " + err);
-  exec("pm2 restart Kaveemd");
+  exec("pm2 restart KAVEE-MD");
 });
 
 module.exports = router;
