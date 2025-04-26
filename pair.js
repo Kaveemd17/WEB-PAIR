@@ -141,5 +141,3 @@ process.on("uncaughtException", function (err) {
   console.log("Caught exception: " + err);
   exec("pm2 restart KAVEE-MD");
 });
-
-module.exports = router;
