@@ -6,6 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const PhoneNumber = require("awesome-phonenumber");
 const phone = require("phone");
+const qrcode = require("qrcode");
 const __path = process.cwd();
 
 // In-memory storage for pairing sessions
@@ -35,7 +36,7 @@ router.post("/validate-phone", (req, res) => {
       });
     }
     
-    // Validate and format the phone number using the phone library
+    // Validate and format the phone number
     const validatedPhone = phone(phoneNumber);
     
     if (!validatedPhone.isValid) {
@@ -45,7 +46,7 @@ router.post("/validate-phone", (req, res) => {
       });
     }
     
-    // Format the phone number for display using awesome-phonenumber
+    // Format the phone number for display
     const pn = new PhoneNumber(validatedPhone.phoneNumber);
     
     return res.json({
@@ -63,8 +64,8 @@ router.post("/validate-phone", (req, res) => {
   }
 });
 
-// Route to initiate pairing with phone number
-router.post("/pair", async (req, res) => {
+// Route to initiate pairing and get QR code
+router.post("/get-link-code", async (req, res) => {
   try {
     const { phoneNumber } = req.body;
     
@@ -95,34 +96,46 @@ router.post("/pair", async (req, res) => {
       fs.mkdirSync(sessionPath, { recursive: true });
     }
     
-    // Initialize WhatsApp connection
-    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
-    
-    const sock = makeWASocket({
-      logger: pino({ level: "silent" }),
-      printQRInTerminal: false,
-      browser: Browsers.macOS("Desktop"),
-      auth: state
-    });
-    
-    // Store session information
+    // Store basic session info immediately so client can start checking status
     pairingSessions.set(sessionId, {
-      sock,
       phoneNumber: validatedPhone.phoneNumber,
       status: "initializing",
       createdAt: new Date()
     });
     
+    // Initialize WhatsApp connection asynchronously
+    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
+    
+    const sock = makeWASocket({
+      logger: pino({ level: "silent" }),
+      printQRInTerminal: true,
+      browser: Browsers.macOS("Desktop"),
+      auth: state,
+      qrTimeout: 60000
+    });
+    
+    pairingSessions.get(sessionId).sock = sock;
+    
+    // Handle connection updates
     sock.ev.on("connection.update", async (update) => {
-      const { connection, lastDisconnect } = update;
+      const { connection, lastDisconnect, qr } = update;
+      
+      const session = pairingSessions.get(sessionId);
+      if (!session) return; // Session might have been deleted
+      
+      if (qr) {
+        // QR code received - update session with QR
+        session.qr = qr;
+        session.status = "qr_ready";
+      }
       
       if (connection === "open") {
         console.log("Connection opened for session:", sessionId);
-        pairingSessions.get(sessionId).status = "connected";
+        session.status = "connected";
         
         // Save user profile info
-        const userInfo = await sock.user;
-        pairingSessions.get(sessionId).userInfo = userInfo;
+        const userInfo = sock.user;
+        session.userInfo = userInfo;
       }
       
       if (connection === "close") {
@@ -132,44 +145,37 @@ router.post("/pair", async (req, res) => {
           reason = lastDisconnect.error;
         }
         
-        pairingSessions.get(sessionId).status = "disconnected";
-        pairingSessions.get(sessionId).disconnectReason = reason.message;
+        session.status = "disconnected";
+        session.disconnectReason = reason.message;
         
         // Clean up after some time
         setTimeout(() => {
           if (pairingSessions.has(sessionId)) {
             pairingSessions.delete(sessionId);
           }
-        }, 30 * 60 * 1000); // 30 minutes
+          
+          // Try to remove session directory
+          try {
+            fs.rmSync(sessionPath, { recursive: true, force: true });
+            console.log(`Removed session directory: ${sessionPath}`);
+          } catch (err) {
+            console.error(`Error removing session directory: ${err.message}`);
+          }
+        }, 15 * 60 * 1000); // 15 minutes
       }
     });
     
     sock.ev.on("creds.update", saveCreds);
     
-    // Start the pairing process by sending a message to the provided phone number
-    try {
-      await sock.sendMessage(`${validatedPhone.phoneNumber.replace("+", "")}@s.whatsapp.net`, { 
-        text: `🤖 *KAVEE-MD Bot Pairing Request*\n\nThis is an automated message from KAVEE-MD Bot. Someone is trying to pair this bot with your WhatsApp number. If this was you, please wait while the pairing completes. If not, please ignore this message.`
-      });
-      
-      pairingSessions.get(sessionId).status = "message_sent";
-      
-      return res.json({
-        status: true,
-        message: "Pairing initiated. A message has been sent to your WhatsApp number.",
-        sessionId: sessionId
-      });
-    } catch (msgError) {
-      console.error("Error sending message:", msgError);
-      
-      return res.json({
-        status: false,
-        message: "Failed to send message to the provided number. Please ensure the number is registered on WhatsApp.",
-        error: msgError.message
-      });
-    }
+    // Return session ID immediately
+    return res.json({
+      status: true,
+      message: "Pairing session created. Fetching link code...",
+      sessionId: sessionId
+    });
+    
   } catch (error) {
-    console.error("Error in pairing:", error);
+    console.error("Error in creating pairing session:", error);
     return res.json({
       status: false,
       message: "Error initiating pairing",
@@ -178,8 +184,8 @@ router.post("/pair", async (req, res) => {
   }
 });
 
-// Route to check pairing status
-router.get("/status/:sessionId", (req, res) => {
+// Route to check pairing status and get QR code
+router.get("/status/:sessionId", async (req, res) => {
   const { sessionId } = req.params;
   
   if (!pairingSessions.has(sessionId)) {
@@ -191,10 +197,21 @@ router.get("/status/:sessionId", (req, res) => {
   
   const session = pairingSessions.get(sessionId);
   
+  // If QR code is available, generate data URL
+  let qrDataUrl = null;
+  if (session.qr) {
+    try {
+      qrDataUrl = await qrcode.toDataURL(session.qr);
+    } catch (err) {
+      console.error("Error generating QR data URL:", err);
+    }
+  }
+  
   return res.json({
     status: true,
     pairingStatus: session.status,
     phoneNumber: session.phoneNumber,
+    qrCode: qrDataUrl,
     userInfo: session.userInfo || null,
     disconnectReason: session.disconnectReason || null
   });
@@ -204,11 +221,12 @@ router.get("/status/:sessionId", (req, res) => {
 setInterval(() => {
   const now = new Date();
   pairingSessions.forEach((session, sessionId) => {
-    // Remove sessions older than 1 hour
-    if ((now - session.createdAt) > 60 * 60 * 1000) {
+    // Remove sessions older than 30 minutes
+    if ((now - session.createdAt) > 30 * 60 * 1000) {
+      console.log(`Cleaning up expired session: ${sessionId}`);
       pairingSessions.delete(sessionId);
     }
   });
-}, 15 * 60 * 1000); // Run every 15 minutes
+}, 10 * 60 * 1000); // Run every 10 minutes
 
 module.exports = router;
