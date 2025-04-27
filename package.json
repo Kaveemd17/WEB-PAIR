@@ -4,7 +4,7 @@
     "description": "A multi functional whatsapp bot Web paircode.",
     "main": "index.js",
     "scripts": {
-      "start": "pm2 start index.js --deep-monitoring --attach --name KAVEE-MD",
+      "start": "pm2 start index.js --deep-monitoring --attach --name KAVEE-MD -f",
       "stop": "pm2 stop KAVEE-MD",
      "restart": "pm2 restart KAVEE-MD"
     },
