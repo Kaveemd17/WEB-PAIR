@@ -1,10 +1,15 @@
 // Define path globally with proper declaration
-const express = require("express");
+const express = require('express');
 const app = express();
-const path = require("path");
-global.__path = process.cwd();
-const bodyParser = require("body-parser");
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
+
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
+});
 
 // Use try/catch when requiring modules
 let code;
