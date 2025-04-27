@@ -1,52 +1,85 @@
 const express = require("express");
-const fs = require("fs");
-const { exec } = require("child_process");
-let router = express.Router();
+const router = express.Router();
+const { default: makeWASocket, useMultiFileAuthState, Browsers, DisconnectReason } = require("@whiskeysockets/baileys");
 const pino = require("pino");
-const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  delay,
-  makeCacheableSignalKeyStore,
-  Browsers,
-  jidNormalizedUser,
-} = require("@whiskeysockets/baileys");
-const { upload } = require("./mega");
-
-function removeFile(FilePath) {
-  if (!fs.existsSync(FilePath)) return false;
-  fs.rmSync(FilePath, { recursive: true, force: true });
-}
+const path = require("path");
+const fs = require("fs");
+const qrcode = require("qrcode");
+const __path = process.cwd();
 
 router.get("/", async (req, res) => {
-  let num = req.query.number;
-  async function KAVEEMDPair() {
-    const { state, saveCreds } = await useMultiFileAuthState(`./session`);
-    try {
-      let KAVEEMDPairWeb = makeWASocket({
-        auth: {
-          creds: state.creds,
-          keys: makeCacheableSignalKeyStore(
-            state.keys,
-            pino({ level: "fatal" }).child({ level: "fatal" })
-          ),
-        },
-        printQRInTerminal: false,
-        logger: pino({ level: "fatal" }).child({ level: "fatal" }),
-        browser: Browsers.macOS("Safari"),
-      });
+  try {
+    res.sendFile(__path + "/pair.html");
+  } catch (error) {
+    res.json({
+      status: false,
+      message: "Error in server",
+      error: error.message
+    });
+  }
+});
 
-      if (!KAVEEMDPairWeb.authState.creds.registered) {
-        await delay(1500);
-        num = num.replace(/[^0-9]/g, "");
-        const code = await KAVEEMDPairWeb.requestPairingCode(num);
-        if (!res.headersSent) {
-          await res.send({ code });
+router.get("/qr", async (req, res) => {
+  try {
+    const { state, saveCreds } = await useMultiFileAuthState(__path + "/auth_info_baileys");
+    const sock = makeWASocket({
+      logger: pino({ level: "silent" }),
+      printQRInTerminal: true,
+      browser: Browsers.macOS("Desktop"),
+      auth: state,
+      qrTimeout: 40000
+    });
+
+    sock.ev.on("connection.update", async (update) => {
+      const { connection, lastDisconnect, qr } = update;
+      if (qr) {
+        qrcode.toDataURL(qr, (err, url) => {
+          if (err) {
+            res.json({
+              status: false,
+              message: "Error generating QR code",
+              error: err.message
+            });
+          }
+          res.json({
+            status: true,
+            qr: url
+          });
+        });
+      }
+      
+      if (connection === "close") {
+        let reason = new Error("Unknown");
+        if (lastDisconnect && lastDisconnect.error) {
+          reason = lastDisconnect.error;
+        }
+        if (reason.output?.statusCode !== DisconnectReason.loggedOut) {
+          console.log("Reconnecting...");
+        } else {
+          console.log("Disconnected.");
+          try {
+            fs.rmSync(__path + "/auth_info_baileys", { recursive: true, force: true });
+            console.log("Deleted auth_info_baileys folder");
+          } catch (err) {
+            console.error("Error deleting auth folder:", err);
+          }
         }
       }
+      
+      if (connection === "open") {
+        console.log("Connected...");
+      }
+    });
 
-      KAVEEMDPairWeb.ev.on("creds.update", saveCreds);
-      KAVEEMDPairWeb.ev.on("connection.update", async (s) => {
-        const { connection, lastDisconnect } = s;
-        if (connection === "open") {
-          try
+    sock.ev.on("creds.update", saveCreds);
+
+  } catch (error) {
+    res.json({
+      status: false,
+      message: "Error in server",
+      error: error.message
+    });
+  }
+});
+
+module.exports = router;
