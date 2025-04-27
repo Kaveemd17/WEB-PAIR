@@ -28,27 +28,27 @@ router.get("/", async (req, res) => {
 router.post("/validate-phone", (req, res) => {
   try {
     const { phoneNumber } = req.body;
-    
+
     if (!phoneNumber || phoneNumber.trim() === "") {
       return res.json({
         status: false,
         message: "Phone number is required"
       });
     }
-    
+
     // Validate and format the phone number
     const validatedPhone = phone(phoneNumber);
-    
+
     if (!validatedPhone.isValid) {
       return res.json({
         status: false,
         message: "Invalid phone number format"
       });
     }
-    
+
     // Format the phone number for display
     const pn = new PhoneNumber(validatedPhone.phoneNumber);
-    
+
     return res.json({
       status: true,
       phoneNumber: validatedPhone.phoneNumber,
@@ -68,44 +68,44 @@ router.post("/validate-phone", (req, res) => {
 router.post("/get-link-code", async (req, res) => {
   try {
     const { phoneNumber } = req.body;
-    
+
     if (!phoneNumber || phoneNumber.trim() === "") {
       return res.json({
         status: false,
         message: "Phone number is required"
       });
     }
-    
+
     // Validate phone number
     const validatedPhone = phone(phoneNumber);
-    
+
     if (!validatedPhone.isValid) {
       return res.json({
         status: false,
         message: "Invalid phone number format"
       });
     }
-    
+
     // Create a unique session ID
     const sessionId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-    
+
     // Create directory for this session if it doesn't exist
     const sessionPath = path.join(__path, "auth_sessions", sessionId);
-    
+
     if (!fs.existsSync(sessionPath)) {
       fs.mkdirSync(sessionPath, { recursive: true });
     }
-    
+
     // Store basic session info immediately so client can start checking status
     pairingSessions.set(sessionId, {
       phoneNumber: validatedPhone.phoneNumber,
       status: "initializing",
       createdAt: new Date()
     });
-    
+
     // Initialize WhatsApp connection asynchronously
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
-    
+
     const sock = makeWASocket({
       logger: pino({ level: "silent" }),
       printQRInTerminal: true,
@@ -113,67 +113,75 @@ router.post("/get-link-code", async (req, res) => {
       auth: state,
       qrTimeout: 60000
     });
-    
+
     pairingSessions.get(sessionId).sock = sock;
-    
+
     // Handle connection updates
     sock.ev.on("connection.update", async (update) => {
       const { connection, lastDisconnect, qr } = update;
-      
+
       const session = pairingSessions.get(sessionId);
       if (!session) return; // Session might have been deleted
-      
+
       if (qr) {
         // QR code received - update session with QR
         session.qr = qr;
         session.status = "qr_ready";
       }
-      
+
       if (connection === "open") {
         console.log("Connection opened for session:", sessionId);
         session.status = "connected";
-        
+
         // Save user profile info
         const userInfo = sock.user;
         session.userInfo = userInfo;
       }
-      
+
       if (connection === "close") {
         console.log("Connection closed for session:", sessionId);
         let reason = new Error("Unknown");
         if (lastDisconnect && lastDisconnect.error) {
           reason = lastDisconnect.error;
         }
-        
+
         session.status = "disconnected";
         session.disconnectReason = reason.message;
-        
+
         // Clean up after some time
-        setTimeout(() => {
-          if (pairingSessions.has(sessionId)) {
-            pairingSessions.delete(sessionId);
-          }
-          
-          // Try to remove session directory
+        setTimeout(async () => {
           try {
-            fs.rmSync(sessionPath, { recursive: true, force: true });
-            console.log(`Removed session directory: ${sessionPath}`);
-          } catch (err) {
-            console.error(`Error removing session directory: ${err.message}`);
+            if (pairingSessions.has(sessionId)) {
+              const session = pairingSessions.get(sessionId);
+              if (session.sock) {
+                await session.sock.logout();
+                await session.sock.end();
+              }
+              pairingSessions.delete(sessionId);
+            }
+            // Try to remove session directory
+            try {
+              fs.rmSync(sessionPath, { recursive: true, force: true });
+              console.log(`Removed session directory: ${sessionPath}`);
+            } catch (err) {
+              console.error(`Error removing session directory: ${err.message}`);
+            }
+          } catch (error) {
+            console.error("Error during session cleanup:", error);
           }
         }, 15 * 60 * 1000); // 15 minutes
       }
     });
-    
+
     sock.ev.on("creds.update", saveCreds);
-    
+
     // Return session ID immediately
     return res.json({
       status: true,
       message: "Pairing session created. Fetching link code...",
       sessionId: sessionId
     });
-    
+
   } catch (error) {
     console.error("Error in creating pairing session:", error);
     return res.json({
@@ -187,16 +195,16 @@ router.post("/get-link-code", async (req, res) => {
 // Route to check pairing status and get QR code
 router.get("/status/:sessionId", async (req, res) => {
   const { sessionId } = req.params;
-  
+
   if (!pairingSessions.has(sessionId)) {
     return res.json({
       status: false,
       message: "Invalid or expired session"
     });
   }
-  
+
   const session = pairingSessions.get(sessionId);
-  
+
   // If QR code is available, generate data URL
   let qrDataUrl = null;
   if (session.qr) {
@@ -206,7 +214,7 @@ router.get("/status/:sessionId", async (req, res) => {
       console.error("Error generating QR data URL:", err);
     }
   }
-  
+
   return res.json({
     status: true,
     pairingStatus: session.status,
