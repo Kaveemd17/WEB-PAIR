@@ -4,138 +4,542 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KAVEE-MD Pairing</title>
+    <title>KAVEE-MD Phone Pairing</title>
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+        * {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f0f2f5;
             color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
         }
+        
         .container {
             background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             padding: 30px;
-            max-width: 500px;
             width: 100%;
-            text-align: center;
+            max-width: 500px;
         }
+        
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        
+        .logo {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+        }
+        
         h1 {
             color: #128C7E;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        p {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #555;
+            line-height: 1.5;
+        }
+        
+        .input-group {
             margin-bottom: 20px;
         }
-        .qr-container {
-            margin: 20px 0;
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
         }
-        #qrcode {
-            margin: 0 auto;
-            max-width: 100%;
-            height: auto;
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
         }
-        .instructions {
-            text-align: left;
-            margin-top: 20px;
+        
+        input:focus {
+            border-color: #128C7E;
+            outline: none;
         }
-        .instructions ol {
-            padding-left: 20px;
-        }
+        
         .btn {
             background-color: #128C7E;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 5px;
-            cursor: pointer;
+            padding: 14px 20px;
+            border-radius: 8px;
             font-size: 16px;
-            margin-top: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
             transition: background-color 0.3s;
         }
+        
         .btn:hover {
-            background-color: #0e7d71;
+            background-color: #0d7066;
         }
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
+        
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
+        
         .status {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 5px;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
         }
+        
         .status.error {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: #fff2f0;
+            color: #cf1322;
+            border: 1px solid #ffccc7;
         }
+        
         .status.success {
-            background-color: #d4edda;
-            color: #155724;
+            background-color: #f6ffed;
+            color: #389e0d;
+            border: 1px solid #b7eb8f;
+        }
+        
+        .status.info {
+            background-color: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        
+        .status.warning {
+            background-color: #fffbe6;
+            color: #d48806;
+            border: 1px solid #ffe58f;
+        }
+        
+        .step {
+            display: none;
+        }
+        
+        .step.active {
+            display: block;
+        }
+        
+        .steps-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #ddd;
+            border-radius: 50%;
+            margin: 0 5px;
+        }
+        
+        .step-dot.active {
+            background-color: #128C7E;
+        }
+        
+        .user-profile {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .profile-pic {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 15px;
+            border: 3px solid #128C7E;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .instruction {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .instruction h3 {
+            margin-bottom: 10px;
+            color: #128C7E;
+        }
+        
+        .instruction ol {
+            padding-left: 20px;
+        }
+        
+        .instruction li {
+            margin-bottom: 8px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>KAVEE-MD WhatsApp Pair</h1>
-        <p>Scan the QR code below with WhatsApp to pair your device</p>
-        
-        <div class="qr-container">
-            <img id="qrcode" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="QR Code placeholder">
+        <div class="logo-container">
+            <!-- Placeholder for logo -->
+            <div style="width: 100px; height: 100px; background-color: #128C7E; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 24px; font-weight: bold;">KAVEE</div>
         </div>
         
-        <div id="status"></div>
+        <h1>KAVEE-MD WhatsApp Pairing</h1>
         
-        <button class="btn" id="refresh">Refresh QR Code</button>
+        <div class="steps-indicator">
+            <div class="step-dot active" id="dot-1"></div>
+            <div class="step-dot" id="dot-2"></div>
+            <div class="step-dot" id="dot-3"></div>
+        </div>
         
-        <div class="instructions">
-            <h3>How to pair:</h3>
-            <ol>
-                <li>Open WhatsApp on your phone</li>
-                <li>Tap Menu or Settings and select Linked Devices</li>
-                <li>Tap on "Link a Device"</li>
-                <li>Scan the QR code displayed on this page</li>
-            </ol>
+        <!-- Step 1: Phone Input -->
+        <div class="step active" id="step-1">
+            <p>Enter your WhatsApp phone number to pair with KAVEE-MD Bot</p>
+            
+            <div class="input-group">
+                <label for="phoneNumber">WhatsApp Phone Number (with country code)</label>
+                <input type="tel" id="phoneNumber" placeholder="+94771234567" required>
+            </div>
+            
+            <button class="btn" id="validateBtn">Continue</button>
+            
+            <div class="status" id="validateStatus"></div>
+            
+            <div class="instruction">
+                <h3>Instructions:</h3>
+                <ol>
+                    <li>Enter your active WhatsApp phone number with country code (e.g., +94771234567)</li>
+                    <li>Make sure your phone has an active internet connection</li>
+                    <li>Keep your WhatsApp open during the pairing process</li>
+                </ol>
+            </div>
+        </div>
+        
+        <!-- Step 2: Confirmation -->
+        <div class="step" id="step-2">
+            <p>Confirm your phone number to continue with pairing</p>
+            
+            <div class="input-group">
+                <label>Your WhatsApp Number</label>
+                <input type="text" id="confirmedNumber" readonly>
+            </div>
+            
+            <p>We'll send a message to this number to verify your WhatsApp account</p>
+            
+            <div class="btn-group" style="display: flex; gap: 10px;">
+                <button class="btn" id="backBtn" style="background-color: #f5f5f5; color: #333;">Back</button>
+                <button class="btn" id="confirmBtn">Confirm & Pair</button>
+            </div>
+            
+            <div class="status" id="confirmStatus"></div>
+        </div>
+        
+        <!-- Step 3: Pairing Status -->
+        <div class="step" id="step-3">
+            <p>Pairing with WhatsApp</p>
+            
+            <div class="status info" id="pairStatus" style="display: block;">
+                <p><span class="loading"></span> Initiating connection to WhatsApp...</p>
+            </div>
+            
+            <div class="user-profile" id="userProfile" style="display: none;">
+                <img class="profile-pic" id="profilePic" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="Profile Picture">
+                <h3 id="userName">User Name</h3>
+                <p id="userPhone">Phone Number</p>
+            </div>
+            
+            <button class="btn" id="doneBtn" style="display: none;">Done</button>
+            <button class="btn" id="retryBtn" style="display: none; margin-top: 10px;">Retry</button>
+            
+            <div class="instruction">
+                <h3>What happens next?</h3>
+                <ol>
+                    <li>You will receive a WhatsApp message from KAVEE-MD Bot</li>
+                    <li>The pairing process will complete automatically</li>
+                    <li>Once connected, you can start using KAVEE-MD Bot commands</li>
+                </ol>
+            </div>
         </div>
     </div>
 
     <script>
-        const qrcodeElement = document.getElementById('qrcode');
-        const statusElement = document.getElementById('status');
-        const refreshButton = document.getElementById('refresh');
+        // DOM Elements
+        const validateBtn = document.getElementById('validateBtn');
+        const phoneNumberInput = document.getElementById('phoneNumber');
+        const validateStatus = document.getElementById('validateStatus');
+        const confirmedNumber = document.getElementById('confirmedNumber');
+        const backBtn = document.getElementById('backBtn');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const confirmStatus = document.getElementById('confirmStatus');
+        const pairStatus = document.getElementById('pairStatus');
+        const userProfile = document.getElementById('userProfile');
+        const profilePic = document.getElementById('profilePic');
+        const userName = document.getElementById('userName');
+        const userPhone = document.getElementById('userPhone');
+        const doneBtn = document.getElementById('doneBtn');
+        const retryBtn = document.getElementById('retryBtn');
         
-        function fetchQR() {
-            statusElement.textContent = "Loading QR code...";
-            statusElement.className = "status";
+        // Step indicators
+        const dot1 = document.getElementById('dot-1');
+        const dot2 = document.getElementById('dot-2');
+        const dot3 = document.getElementById('dot-3');
+        
+        // Step containers
+        const step1 = document.getElementById('step-1');
+        const step2 = document.getElementById('step-2');
+        const step3 = document.getElementById('step-3');
+        
+        // Variables to store session data
+        let sessionId = null;
+        let formattedPhoneNumber = null;
+        let statusCheckInterval = null;
+        
+        // Show a specific step
+        function showStep(stepNumber) {
+            // Hide all steps
+            step1.classList.remove('active');
+            step2.classList.remove('active');
+            step3.classList.remove('active');
             
-            fetch('/code/qr')
-                .then(response => response.json())
-                .then(data => {
-                    if(data.status) {
-                        qrcodeElement.src = data.qr;
-                        statusElement.textContent = "QR Code is ready! Scan with WhatsApp.";
-                        statusElement.className = "status success";
-                    } else {
-                        statusElement.textContent = "Error: " + data.message;
-                        statusElement.className = "status error";
-                    }
-                })
-                .catch(error => {
-                    statusElement.textContent = "Error connecting to server: " + error.message;
-                    statusElement.className = "status error";
-                });
+            // Reset active dots
+            dot1.classList.remove('active');
+            dot2.classList.remove('active');
+            dot3.classList.remove('active');
+            
+            // Show the requested step
+            if (stepNumber === 1) {
+                step1.classList.add('active');
+                dot1.classList.add('active');
+            } else if (stepNumber === 2) {
+                step2.classList.add('active');
+                dot2.classList.add('active');
+            } else if (stepNumber === 3) {
+                step3.classList.add('active');
+                dot3.classList.add('active');
+            }
         }
         
-        // Initial load
-        fetchQR();
+        // Show status message
+        function showStatus(element, message, type) {
+            element.textContent = message;
+            element.className = 'status ' + type;
+            element.style.display = 'block';
+        }
         
-        // Set up refresh button
-        refreshButton.addEventListener('click', fetchQR);
+        // Validate phone number
+        validateBtn.addEventListener('click', async () => {
+            const phoneNumber = phoneNumberInput.value.trim();
+            
+            if (!phoneNumber) {
+                showStatus(validateStatus, 'Please enter a phone number', 'error');
+                return;
+            }
+            
+            validateBtn.disabled = true;
+            validateBtn.innerHTML = '<span class="loading"></span> Validating...';
+            
+            try {
+                const response = await fetch('/code/validate-phone', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ phoneNumber })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status) {
+                    // Store the formatted number
+                    formattedPhoneNumber = data.formattedNumber;
+                    
+                    // Show confirmation screen
+                    confirmedNumber.value = formattedPhoneNumber;
+                    showStep(2);
+                } else {
+                    showStatus(validateStatus, data.message || 'Invalid phone number', 'error');
+                }
+            } catch (error) {
+                showStatus(validateStatus, 'Network error. Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                validateBtn.disabled = false;
+                validateBtn.textContent = 'Continue';
+            }
+        });
+        
+        // Go back to phone input
+        backBtn.addEventListener('click', () => {
+            showStep(1);
+            validateStatus.style.display = 'none';
+        });
+        
+        // Confirm and pair
+        confirmBtn.addEventListener('click', async () => {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="loading"></span> Processing...';
+            
+            try {
+                const response = await fetch('/code/pair', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ phoneNumber: phoneNumberInput.value.trim() })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status) {
+                    // Store session ID for status checks
+                    sessionId = data.sessionId;
+                    
+                    // Move to status screen
+                    showStep(3);
+                    
+                    // Start checking status
+                    startStatusChecks();
+                } else {
+                    showStatus(confirmStatus, data.message || 'Failed to initiate pairing', 'error');
+                }
+            } catch (error) {
+                showStatus(confirmStatus, 'Network error. Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Confirm & Pair';
+            }
+        });
+        
+        // Check pairing status periodically
+        function startStatusChecks() {
+            // Update status immediately
+            checkStatus();
+            
+            // Then check every 3 seconds
+            statusCheckInterval = setInterval(checkStatus, 3000);
+        }
+        
+        // Stop status checks
+        function stopStatusChecks() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+                statusCheckInterval = null;
+            }
+        }
+        
+        // Check pairing status
+        async function checkStatus() {
+            if (!sessionId) return;
+            
+            try {
+                const response = await fetch(`/code/status/${sessionId}`);
+                const data = await response.json();
+                
+                if (!data.status) {
+                    // Session expired or invalid
+                    pairStatus.innerHTML = '<p>Session expired. Please try again.</p>';
+                    pairStatus.className = 'status error';
+                    retryBtn.style.display = 'block';
+                    stopStatusChecks();
+                    return;
+                }
+                
+                // Update status based on pairing status
+                switch (data.pairingStatus) {
+                    case 'initializing':
+                        pairStatus.innerHTML = '<p><span class="loading"></span> Initializing connection...</p>';
+                        pairStatus.className = 'status info';
+                        break;
+                        
+                    case 'message_sent':
+                        pairStatus.innerHTML = '<p><span class="loading"></span> Message sent to your WhatsApp. Please check your phone.</p>';
+                        pairStatus.className = 'status warning';
+                        break;
+                        
+                    case 'connected':
+                        pairStatus.innerHTML = '<p>Successfully connected to WhatsApp!</p>';
+                        pairStatus.className = 'status success';
+                        
+                        // Show user profile if available
+                        if (data.userInfo) {
+                            userProfile.style.display = 'block';
+                            userName.textContent = data.userInfo.name || 'User';
+                            userPhone.textContent = data.phoneNumber;
+                            
+                            if (data.userInfo.profilePictureUrl) {
+                                profilePic.src = data.userInfo.profilePictureUrl;
+                            }
+                        }
+                        
+                        doneBtn.style.display = 'block';
+                        stopStatusChecks();
+                        break;
+                        
+                    case 'disconnected':
+                        pairStatus.innerHTML = `<p>Disconnected: ${data.disconnectReason || 'Unknown reason'}</p>`;
+                        pairStatus.className = 'status error';
+                        retryBtn.style.display = 'block';
+                        stopStatusChecks();
+                        break;
+                        
+                    default:
+                        pairStatus.innerHTML = `<p><span class="loading"></span> ${data.pairingStatus || 'Waiting for connection...'}</p>`;
+                        pairStatus.className = 'status info';
+                }
+            } catch (error) {
+                console.error('Error checking status:', error);
+                pairStatus.innerHTML = '<p>Error checking status. Will retry...</p>';
+                pairStatus.className = 'status error';
+            }
+        }
+        
+        // Done button
+        doneBtn.addEventListener('click', () => {
+            window.location.reload();
+        });
+        
+        // Retry button
+        retryBtn.addEventListener('click', () => {
+            window.location.reload();
+        });
     </script>
 </body>
 </html>
