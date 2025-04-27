@@ -4,7 +4,7 @@ const app = express();
 const path = require("path");
 global.__path = process.cwd();
 const bodyParser = require("body-parser");
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 5000;
 
 // Use try/catch when requiring modules
 let code;
