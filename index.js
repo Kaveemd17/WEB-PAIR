@@ -1,20 +1,59 @@
+// Define path globally with proper declaration
 const express = require("express");
 const app = express();
-__path = process.cwd();
+const path = require("path");
+global.__path = process.cwd();
 const bodyParser = require("body-parser");
 const PORT = process.env.PORT || 8000;
-let code = require("./pair");
+
+// Use try/catch when requiring modules
+let code;
+try {
+  code = require("./pair");
+} catch (error) {
+  console.error("Error loading pair.js module:", error.message);
+  process.exit(1); // Exit if critical module is missing
+}
+
+// Increase event listener limit
 require("events").EventEmitter.defaultMaxListeners = 500;
-app.use("/code", code);
 
-app.use("/", async (req, res, next) => {
-  res.sendFile(__path + "/pair.html");
-});
-
+// Configure middleware before routes
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.listen(PORT, () => {
+
+// Routes
+app.use("/code", code);
+
+app.use("/", async (req, res) => {
+  try {
+    res.sendFile(path.join(__path, "pair.html"));
+  } catch (error) {
+    console.error("Error sending file:", error.message);
+    res.status(500).send("Internal Server Error: Could not load pair.html");
+  }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).send("Internal Server Error");
+});
+
+// Start server with error handling
+const server = app.listen(PORT, () => {
   console.log(`⏩ Server running on http://localhost:` + PORT);
+}).on("error", (error) => {
+  console.error("Failed to start server:", error.message);
+});
+
+// Handle graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully");
+  server.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
 });
 
 module.exports = app;
