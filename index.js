@@ -41,8 +41,8 @@ app.use((err, req, res, next) => {
 });
 
 // Start server with error handling
-const server = app.listen(PORT, () => {
-  console.log(`⏩ Server running on http://localhost:` + PORT);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`⏩ Server running on http://0.0.0.0:` + PORT);
 }).on("error", (error) => {
   console.error("Failed to start server:", error.message);
 });
